@@ -2,7 +2,7 @@ package io.github.seisuke.pikot8
 
 actual typealias PlatformWave = AudioBuffer
 
-actual class PlatformWaveBuilder(val context: AudioContext) {
+actual class PlatformWaveConverter(val context: AudioContext) {
 
     fun convert(wave: Wave): PlatformWave {
         val audioBuffer = context.createBuffer(

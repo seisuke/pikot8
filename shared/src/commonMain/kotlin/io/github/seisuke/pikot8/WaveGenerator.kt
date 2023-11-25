@@ -17,15 +17,11 @@ class WaveGenerator(
         noteLength = floor(SAMPLE_RATE * firstSfx.speed.toFloat() / BASE_SPEED).toInt()
     }
 
-    fun generateWaveList(): List<Wave> = sfxMap.map { (_, sfx) ->
-        sfxToWave(sfx, noteLength)
-    }
-
     fun generateWaveMap(): Map<SfxId, Wave> = sfxMap.mapValues { (_, sfx) ->
         sfxToWave(sfx, noteLength)
     }
 
-    fun generateEmptyNote(): Wave = (0..<Sfx.NOTES_MAX_SIZE).flatMap { _ ->
+    fun createEmptyNote(): Wave = (0..<Sfx.NOTES_MAX_SIZE).flatMap { _ ->
         createEmptyWave(noteLength)
     }
 

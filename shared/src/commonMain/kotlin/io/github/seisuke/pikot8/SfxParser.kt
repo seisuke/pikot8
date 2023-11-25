@@ -5,7 +5,7 @@ import io.github.seisuke.pikot8.Sfx.Companion.NOTES_MAX_SIZE
 class SfxParser {
 
     @Throws(IllegalArgumentException::class)
-    fun parseMusic(sfxText: String): Music {
+    fun parse(sfxText: String): SfxAndPattern {
         //need escape for right square brackets in Kotlin/JS
         val matchGroup = Regex("""(\[sfx\])?([0-9a-f]*)(\[.sfx\])?""")
             .matchEntire(sfxText)?.groups?.get(2)
@@ -20,7 +20,7 @@ class SfxParser {
             parsePattern(buffer)
         }
 
-        return Music(
+        return SfxAndPattern(
             sfxMap,
             sfxPatternList,
         )

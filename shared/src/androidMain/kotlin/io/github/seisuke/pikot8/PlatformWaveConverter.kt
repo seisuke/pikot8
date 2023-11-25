@@ -6,7 +6,7 @@ import java.nio.ByteOrder
 
 actual typealias PlatformWave = ByteArray
 
-actual class PlatformWaveBuilder {
+actual class PlatformWaveConverter {
     fun convert(wave: Wave): PlatformWave {
         val byteBuffer = ByteBuffer.allocate(wave.size * 2)
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN)
@@ -15,6 +15,6 @@ actual class PlatformWaveBuilder {
         }.forEach {
             byteBuffer.putShort(it)
         }
-        return byteBuffer.flip().toArray()
+        return (byteBuffer.flip() as ByteBuffer).toArray()
     }
 }

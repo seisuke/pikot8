@@ -5,7 +5,34 @@ import kotlin.jvm.JvmInline
 @JvmInline
 value class SfxId(val id: Int)
 
-data class Music(
+sealed class ParseMusicResult {
+    companion object {
+        fun parse(sfxText: String): ParseMusicResult = try {
+            println("buildMusicState")
+            val sfxAndPattern = SfxParser().parse(sfxText)
+            val generator = WaveGenerator(sfxAndPattern.sfxMap)
+            val waveMap = generator.generateWaveMap()
+            val emptyWave = generator.createEmptyNote()
+            Success(
+                waveMap = waveMap,
+                transposedPattern = sfxAndPattern.transposePattern(),
+                emptyWave = emptyWave,
+            )
+        } catch (e: IllegalArgumentException) {
+            Error
+        }
+    }
+
+    data class Success(
+        val waveMap: Map<SfxId, Wave>,
+        val transposedPattern: List<List<SfxId>>,
+        val emptyWave: Wave
+    ): ParseMusicResult()
+
+    data object Error: ParseMusicResult()
+}
+
+data class SfxAndPattern(
     val sfxMap: Map<SfxId, Sfx>,
     val sfxPatternList: List<SfxPattern>,
 ) {
