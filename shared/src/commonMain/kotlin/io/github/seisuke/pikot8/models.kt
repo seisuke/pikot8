@@ -1,49 +1,65 @@
 package io.github.seisuke.pikot8
 
+import io.github.seisuke.pikot8.ParseSfxResult.*
 import kotlin.jvm.JvmInline
 
 @JvmInline
 value class SfxId(val id: Int)
 
-sealed class ParseMusicResult {
+sealed interface ParseMusicResult {
     companion object {
         fun parse(sfxText: String): ParseMusicResult = try {
-            println("buildMusicState")
-            val sfxAndPattern = SfxParser().parse(sfxText)
+            when (val parseSfxResult = SfxParser().parse(sfxText)) {
+                is SfxAndPattern -> music(parseSfxResult)
+                is SingleSfx -> {
+                    val map = mapOf(SfxId(1) to parseSfxResult.sfx)
+                    val generator = WaveGenerator(map)
+                    val wave = generator.generateWaveMap().getValue(SfxId(1))
+                    SingleSfxWave(wave)
+                }
+            }
+        } catch (e: IllegalArgumentException) {
+            Error
+        }
+
+        private fun music(sfxAndPattern: SfxAndPattern): Music {
             val generator = WaveGenerator(sfxAndPattern.sfxMap)
             val waveMap = generator.generateWaveMap()
             val emptyWave = generator.createEmptyNote()
-            Success(
+            return Music(
                 waveMap = waveMap,
                 transposedPattern = sfxAndPattern.transposePattern(),
                 emptyWave = emptyWave,
             )
-        } catch (e: IllegalArgumentException) {
-            Error
         }
     }
 
-    data class Success(
+    data class Music(
         val waveMap: Map<SfxId, Wave>,
         val transposedPattern: List<List<SfxId>>,
         val emptyWave: Wave
-    ): ParseMusicResult()
+    ): ParseMusicResult
 
-    data object Error: ParseMusicResult()
+    data class SingleSfxWave(val wave: Wave): ParseMusicResult
+
+    data object Error: ParseMusicResult
 }
 
-data class SfxAndPattern(
-    val sfxMap: Map<SfxId, Sfx>,
-    val sfxPatternList: List<SfxPattern>,
-) {
-    fun transposePattern(): List<List<SfxId>> =
-        (0..< 4).map { index ->
-            sfxPatternList.map { pattern ->
-                pattern.ids()[index]
+sealed interface ParseSfxResult {
+    data class SfxAndPattern(
+        val sfxMap: Map<SfxId, Sfx>,
+        val sfxPatternList: List<SfxPattern>,
+    ): ParseSfxResult {
+        fun transposePattern(): List<List<SfxId>> =
+            (0..< 4).map { index ->
+                sfxPatternList.map { pattern ->
+                    pattern.ids()[index]
+                }
             }
-        }
 
-    private fun SfxPattern.ids() = listOf(this.id1, this.id2, this.id3, this.id4)
+        private fun SfxPattern.ids() = listOf(this.id1, this.id2, this.id3, this.id4)
+    }
+    data class SingleSfx(val sfx: Sfx): ParseSfxResult
 }
 
 data class SfxPattern(

@@ -12,14 +12,6 @@ class Player {
         transposedPattern: List<List<SfxId>>,
         emptyWave: PlatformWave
     ) {
-        val audioFormat = AudioFormat(
-            WaveGenerator.SAMPLE_RATE.toFloat(),
-            16,
-            1,
-            true,
-            false
-        )
-
         (0 ..< 4).map { index ->
             AudioSystem.getSourceDataLine(audioFormat) to transposedPattern[index]
         }.forEach { (line, pattern) ->
@@ -35,5 +27,27 @@ class Player {
                 }
             }
         }
+    }
+
+    fun playSfx(platformWave: PlatformWave) {
+        val line = AudioSystem.getSourceDataLine(audioFormat)
+        CoroutineScope(Dispatchers.IO).launch {
+            line.use { line ->
+                line.open(audioFormat)
+                line.start()
+                line.write(platformWave, 0, platformWave.size)
+                line.drain()
+            }
+        }
+    }
+
+    companion object {
+        val audioFormat = AudioFormat(
+            WaveGenerator.SAMPLE_RATE.toFloat(),
+            16,
+            1,
+            true,
+            false
+        )
     }
 }

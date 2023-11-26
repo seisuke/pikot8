@@ -12,9 +12,6 @@ import io.github.seisuke.pikot8.ParseMusicResult
 import io.github.seisuke.pikot8.PlatformWaveConverter
 import io.github.seisuke.pikot8.Player
 import io.github.seisuke.pikot8.TITLE
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import org.jetbrains.skiko.wasm.onWasmReady
 
 fun main() {
@@ -41,7 +38,7 @@ fun main() {
 
                         when (parseMusicResult) {
                             ParseMusicResult.Error -> {}
-                            is ParseMusicResult.Success -> {
+                            is ParseMusicResult.Music -> {
                                 val converter = PlatformWaveConverter(audioContext)
                                 val platformWaveMap = parseMusicResult.waveMap.mapValues { (_, wave) ->
                                     converter.convert(wave)
@@ -53,9 +50,10 @@ fun main() {
                                     platformEmptyWave
                                 )
                             }
+                            is ParseMusicResult.SingleSfxWave -> TODO()
                         }
                     },
-                    enabled = parseMusicResult is ParseMusicResult.Success
+                    enabled = parseMusicResult is ParseMusicResult.Music
                 ) {
                     Text("▶")
                 }

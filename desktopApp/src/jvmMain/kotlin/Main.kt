@@ -47,7 +47,13 @@ fun main() = application {
                 onClick = {
                     when (parseMusicResult) {
                         ParseMusicResult.Error -> {}
-                        is ParseMusicResult.Success -> {
+                        is ParseMusicResult.SingleSfxWave -> {
+                            val platformWave = PlatformWaveConverter().convert(parseMusicResult.wave)
+                            Player().playSfx(
+                                platformWave
+                            )
+                        }
+                        is ParseMusicResult.Music -> {
                             buttonEnabled = false
                             val converter = PlatformWaveConverter()
                             val platformWaveMap = parseMusicResult.waveMap.mapValues { (_, wave) ->
@@ -65,7 +71,7 @@ fun main() = application {
                         }
                     }
                 },
-                enabled = parseMusicResult is ParseMusicResult.Success && buttonEnabled
+                enabled = parseMusicResult !is ParseMusicResult.Error && buttonEnabled
             ) {
                 Text("▶")
             }

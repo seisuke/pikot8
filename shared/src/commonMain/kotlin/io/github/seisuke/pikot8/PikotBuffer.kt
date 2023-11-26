@@ -6,6 +6,8 @@ class PikotBuffer(private val sfxByteArrayText: String) {
 
     private var position: Int = 0
 
+    fun size() = sfxByteArrayText.length
+
     fun readBuffer(byte: Int): PikotBuffer {
         val subString = addPosition(byte * 2)
         return PikotBuffer(subString)

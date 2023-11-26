@@ -1,36 +1,69 @@
 package io.github.seisuke.pikot8
 
+import io.github.seisuke.pikot8.ParseSfxResult.SfxAndPattern
+import io.github.seisuke.pikot8.ParseSfxResult.SingleSfx
 import io.github.seisuke.pikot8.Sfx.Companion.NOTES_MAX_SIZE
 
 class SfxParser {
 
     @Throws(IllegalArgumentException::class)
-    fun parse(sfxText: String): SfxAndPattern {
+    fun parse(sfxText: String): ParseSfxResult {
         //need escape for right square brackets in Kotlin/JS
         val matchGroup = Regex("""(\[sfx\])?([0-9a-f]*)(\[.sfx\])?""")
             .matchEntire(sfxText)?.groups?.get(2)
             ?: throw IllegalArgumentException("Invalid data format")
         val buffer = PikotBuffer(matchGroup.value)
-        val sfxNum = buffer.readUnsignedByte().toInt()
-        val patternNum = buffer.readUnsignedByte().toInt()
-        val sfxMap = (0..< sfxNum).associate {
-            parseSfx(buffer)
-        }
-        val sfxPatternList = (0 ..< patternNum).map {
-            parsePattern(buffer)
-        }
+        return when {
+            buffer.size() < 150 -> throw IllegalArgumentException("Invalid data format")
+            buffer.size() == 168 -> {
+                val sfx = parseSingleSfx(buffer)
+                SingleSfx(sfx)
+            }
+            else -> {
+                val sfxNum = buffer.readUnsignedByte().toInt()
+                val patternNum = buffer.readUnsignedByte().toInt()
+                val sfxMap = (0..< sfxNum).associate {
+                    parseSfxInMusic(buffer)
+                }
+                val sfxPatternList = (0 ..< patternNum).map {
+                    parsePattern(buffer)
+                }
 
-        return SfxAndPattern(
-            sfxMap,
-            sfxPatternList,
+                SfxAndPattern(
+                    sfxMap,
+                    sfxPatternList,
+                )
+            }
+        }
+    }
+
+    private fun parseSingleSfx(buffer: PikotBuffer): Sfx {
+        return Sfx(
+            mode = buffer.readUnsignedByte(),
+            speed = buffer.readUnsignedByte(),
+            loopStart = buffer.readUnsignedByte(),
+            loopEnd = buffer.readUnsignedByte(),
+            notes = parseNotesInSingleSfx(buffer)
         )
     }
 
-    private fun parseSfx(buffer: PikotBuffer): Pair<SfxId, Sfx> {
+    private fun parseNotesInSingleSfx(buffer: PikotBuffer): List<Note> {
+        return (0..< NOTES_MAX_SIZE).map { _ ->
+            val note = Note(
+                pitch = buffer.readUnsignedByte().toInt(),
+                waveform = buffer.read4bit().toInt(),
+                volume = buffer.read4bit().toInt(),
+            )
+            buffer.read4bit() // effect
+            note
+        }
+    }
+
+    private fun parseSfxInMusic(buffer: PikotBuffer): Pair<SfxId, Sfx> {
         val sfxId = SfxId(buffer.readUnsignedByte().toInt())
         val noteBuffer = buffer.readBuffer(64)
         return sfxId to Sfx(
-            notes = parseNotes(noteBuffer),
+            notes = parseNotesInMusic(noteBuffer),
             mode = buffer.readUnsignedByte(),
             speed = buffer.readUnsignedByte(),
             loopStart = buffer.readUnsignedByte(),
@@ -38,7 +71,7 @@ class SfxParser {
         )
     }
 
-    private fun parseNotes(buffer: PikotBuffer): List<Note> {
+    private fun parseNotesInMusic(buffer: PikotBuffer): List<Note> {
         return (0..< NOTES_MAX_SIZE).map { _ ->
             val firstByte = buffer.readByte().toInt()
             val secondByte = buffer.readByte().toInt()
